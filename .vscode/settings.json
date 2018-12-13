@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    "*.tpp": "cpp",
+    "*.tcc": "cpp",
+    "system_error": "cpp",
+    "cstdlib": "cpp",
+    "array": "cpp"
+  },
+  "terminal.integrated.shell.windows": "cmd.exe"
+}

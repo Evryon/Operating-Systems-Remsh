@@ -1,14 +1,14 @@
 # Operating-Systems-Remsh
 
-Team Members:				Daniel Garrett, Kai Li Jin
+Team Members:			      	Daniel Garrett, Kai Li Jin
 
-Date:						12/13/2018
+Date:				          		12/13/2018
 
-Project ID:					REMOTESHELL
+Project ID:			      		REMOTESHELL
 
-CS Class:					CS3595
+CS Class:					        CS3595
 
-Programming Language:		C++17
+Programming Language:		  C++17
 
 OS/Hardware dependencies:	Linux, g++
 
@@ -21,6 +21,10 @@ use the -v options when run. The help command for server is -h
 Running the client verbosely might be helpful too, the same -v option is
 needed. The help command is -? for the client, however.
 
+<<<<<<< HEAD
 How to build:	make 
+=======
+How to build:	'make'
+>>>>>>> a3f6686bffa0168b91d220d7f31e55f3e673a669
 
 Make will create two programs, client.out and server.out in the bin/ folder.

@@ -21,6 +21,6 @@ use the -v options when run. The help command for server is -h
 Running the client verbosely might be helpful too, the same -v option is
 needed. The help command is -? for the client, however.
 
-How to build:	make
+How to build:	make 
 
 Make will create two programs, client.out and server.out in the bin/ folder.

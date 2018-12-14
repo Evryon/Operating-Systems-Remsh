@@ -18,20 +18,25 @@
 #include <sys/types.h> 
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 #include <cstring>
 #include <netdb.h>
 #include <csignal>
 #include <cerrno>
 #include <string>
+#include <chrono>
+#include <ctime>
 
 #include "vprint.h"
 
 using namespace std;
+using namespace std::chrono;
 
 static const unsigned BUFFERSIZE = 1024;
 bool verboseOutput;
 void usage(const char * const);
+ofstream logfile;
 
 int main(int argc, char * const *argv)
 {
@@ -41,7 +46,19 @@ int main(int argc, char * const *argv)
   unsigned long portAsLong;
   const char *host="127.0.0.1", *service="8888";
   bool noninteractive = false;
+  steady_clock::time_point now, after, now2;
+  milliseconds responseTime;
+
   
+  logfile.open("./response_times.dat", ofstream::out
+                                        |ofstream::ate
+                                        |ofstream::app);
+  if (!logfile){
+    cerr << "Could not open logfile. Continue without logging? [Y/N]: ";
+    char ans = cin.get();
+    if (!(ans^'Y') || !(ans^'y')) { /* Continue */}
+    else return EXIT_FAILURE;
+  }                                        
   verboseOutput = true;
   string command;
 
@@ -128,6 +145,7 @@ int main(int argc, char * const *argv)
 
   if (addr == NULL) { // no addresses worked, just quit
     cerr << "Could not connect to " << host << ':' << service << '\n';
+    freeaddrinfo(addrHead);
     return EXIT_FAILURE;
   }
 
@@ -138,6 +156,7 @@ int main(int argc, char * const *argv)
     int thisreadn=0;
     bytesread=0;
     char buffer[BUFFERSIZE+1] = {};
+    bool firstRead = true;
 
     if (!noninteractive) {
       cout << "$ ";
@@ -149,6 +168,7 @@ int main(int argc, char * const *argv)
     }
 
     // send the command to the server
+    now = steady_clock::now();
     if (write(sessFD, command.c_str(), command.size()+1) < 0) {
       perror("Error in write() to server");
       break;
@@ -163,22 +183,38 @@ int main(int argc, char * const *argv)
       }
       else if (thisreadn == 0) { 
         // if reading EOF, we're done
+        now2 = steady_clock::now();
         break;
       }
 
+      if (firstRead) {
+        after = steady_clock::now();
+        responseTime = duration_cast<seconds>(after-now);
+        firstRead = false;
+      }
       bytesread += thisreadn;
       buffer[thisreadn] = '\0';
       cout << buffer << '\n';
 
       // server appends null byte to end of bytes. If the last byte
       // read is the null byte, then the whole message was received
-      if (buffer[thisreadn-1] == '\0') break;
+      if (buffer[thisreadn-1] == '\0') {
+        now2 = steady_clock::now();
+        break;
+      }
     }
-    verboseprint("Received response from server of %d bytes\n", bytesread); 
+    verboseprint("Received response from server of %d bytes\n", bytesread);
+    auto timestamp = system_clock::now();
+    time_t tt = system_clock::to_time_t(timestamp);
+    string datetime(ctime(&tt));
+    datetime.pop_back();
+    logfile << datetime << '\t' << host << ':' << service 
+            << '\t' << command << '\t' << responseTime.count() << '\n';
     if (noninteractive) break;
   }
 
   verboseprint("Shutting down client...\n");
+  logfile.close();
   shutdown(sessFD, SHUT_RDWR); // send HUP signal
   close(sessFD);
   return EXIT_SUCCESS;

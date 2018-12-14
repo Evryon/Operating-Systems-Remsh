@@ -4,7 +4,8 @@
     "*.tcc": "cpp",
     "system_error": "cpp",
     "cstdlib": "cpp",
-    "array": "cpp"
+    "array": "cpp",
+    "chrono": "cpp"
   },
   "terminal.integrated.shell.windows": "cmd.exe"
 }

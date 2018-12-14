@@ -21,6 +21,7 @@
 #include <sys/poll.h>
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 #include <cstring>
 #include <netdb.h>
@@ -172,11 +173,9 @@ int main(int argc, char **argv)
     else if (pollval > 0) {
       sessFD = accept(connectFD,
                      (struct sockaddr *) &cliAddr, &cliAddrLen);
-    
-      // accept(2) might be interrupted by a child when it 
-      // terminates. Just continue loop if this is the case. 
       if (sessFD < 0) {
-        continue;
+        perror("Accept");
+        break;
       }
     
       unique_ptr<char> host(new char[NI_MAXHOST]),
@@ -204,6 +203,7 @@ int main(int argc, char **argv)
       else {
         // parent will print number of connections if -v is 
         // selected, the continue back to select()
+
         verboseprint("Active connections: %d\n", ++actvConns);
       }
     } // end client handle_request() condition

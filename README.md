@@ -24,5 +24,3 @@ needed. The help command is -? for the client, however.
 How to build:	make
 
 Make will create two programs, client.out and server.out in the bin/ folder.
-
-KuMfYoDt2RXtS3gfRVlb

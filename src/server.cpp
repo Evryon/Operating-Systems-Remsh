@@ -113,6 +113,7 @@ int main(int argc, char **argv)
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM; 
   hints.ai_protocol = 0;       // IP or any protocol
+  hints.ai_flags = AI_PASSIVE;
 
   int s = getaddrinfo(NULL, port, &hints, &addrHead);
   if (s != 0) {
@@ -282,7 +283,8 @@ void handle_request(int sessFD, char *host, char *service)
   sigemptyset(&sigemptymask);
   sessPFD.fd = sessFD;
   sessPFD.events = POLLHUP | POLLIN;
-
+  ts.tv_sec = 3;
+  
   for (;;) {// begin loop to handle multiple commands
     pollval = ppoll(&sessPFD, 1, &ts, &sigemptymask);
 
@@ -294,7 +296,7 @@ void handle_request(int sessFD, char *host, char *service)
     else if (sessPFD.revents & POLLIN) {
       // Client has sent a command, then POLLIN is true
       char buffer[BUFFERSIZE+1] = {};
-      bytesRead = read(sessFD, buffer, BUFFERSIZE);
+      bytesRead = recv(sessFD, buffer, BUFFERSIZE,0);
       if (bytesRead <= 0) {
         break;
       }
@@ -310,12 +312,14 @@ void handle_request(int sessFD, char *host, char *service)
         break;
       }
 
+      memset(&buffer, 0, BUFFERSIZE+1);
       while (!feof(pipe.get())) {
           if (fgets(buffer, BUFFERSIZE, pipe.get()) != NULL)
               result.append(buffer);
       }
 
-      if (write(sessFD, result.c_str(), result.size()+1) < 0) {
+      int n = send(sessFD, result.c_str(), result.size()+1,0);
+      if (n < 0) {
         perror("Error in write()");
         break;
       }

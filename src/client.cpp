@@ -134,7 +134,8 @@ int main(int argc, char * const *argv)
       break;
     }
     else {
-      verboseprint("Failed.\n");
+      verboseprint("Failed. ");
+      perror('\0');
       close(sessFD); // failed to connect, so close socket
     }
   }
@@ -145,7 +146,6 @@ int main(int argc, char * const *argv)
 
   if (addr == NULL) { // no addresses worked, just quit
     cerr << "Could not connect to " << host << ':' << service << '\n';
-    freeaddrinfo(addrHead);
     return EXIT_FAILURE;
   }
 
@@ -169,27 +169,26 @@ int main(int argc, char * const *argv)
 
     // send the command to the server
     now = steady_clock::now();
-    if (write(sessFD, command.c_str(), command.size()+1) < 0) {
+    if (send(sessFD, command.c_str(), command.size()+1, 0) < 0) {
       perror("Error in write() to server");
       break;
     }
 
     for (;;) {
-      memset(&buffer, 0, sizeof buffer);
-      thisreadn = read(sessFD, buffer, BUFFERSIZE);
+      memset(&buffer, 0, BUFFERSIZE+1);
+      thisreadn = recv(sessFD, buffer, BUFFERSIZE, 0);
       if (thisreadn < 0) {
         cerr << "Did not read succesfully\n.";
         return EXIT_FAILURE; 
       }
       else if (thisreadn == 0) { 
         // if reading EOF, we're done
-        now2 = steady_clock::now();
         break;
       }
 
       if (firstRead) {
         after = steady_clock::now();
-        responseTime = duration_cast<seconds>(after-now);
+        responseTime = duration_cast<milliseconds>(after-now);
         firstRead = false;
       }
       bytesread += thisreadn;
@@ -199,15 +198,16 @@ int main(int argc, char * const *argv)
       // server appends null byte to end of bytes. If the last byte
       // read is the null byte, then the whole message was received
       if (buffer[thisreadn-1] == '\0') {
-        now2 = steady_clock::now();
         break;
       }
     }
     verboseprint("Received response from server of %d bytes\n", bytesread);
     auto timestamp = system_clock::now();
+    now2 = steady_clock::now();
     time_t tt = system_clock::to_time_t(timestamp);
     string datetime(ctime(&tt));
     datetime.pop_back();
+    responseTime = duration_cast<milliseconds> (now2-after);
     logfile << datetime << '\t' << host << ':' << service 
             << '\t' << command << '\t' << responseTime.count() << '\n';
     if (noninteractive) break;
